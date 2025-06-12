@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PrivChat - NER + LLM</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #111;
+      color: #e0e0e0;
+    }
+
+    header {
+      background-color: #0f0f0f;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #00ff88;
+      border-bottom: 1px solid #222;
+    }
+
+    .container {
+      padding: 30px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 16px;
+      resize: vertical;
+    }
+
+    button {
+      background-color: #00ff88;
+      color: #000;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #00cc6f;
+    }
+
+    .output {
+      margin-top: 30px;
+      background-color: #1b1b1b;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+    }
+
+    .output h3 {
+      color: #00ff88;
+      margin-bottom: 10px;
+    }
+
+    .entity {
+      display: inline-block;
+      padding: 4px 8px;
+      margin: 3px 3px;
+      border-radius: 6px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .PERSON { background-color: #ffa500; } 
+    .GPE, .LOC { background-color: #1e90ff; } 
+    .ORG { background-color: #ff69b4; } 
+    .DATE { background-color: #ffcc00; }
+    .MONEY { background-color: #00c896; }
+
+    .loading {
+      color: #999;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <header>🛡️ PrivChat - PII Detection Demo</header>
+  <div class="container">
+    <textarea id="prompt" placeholder="Type your message containing names, locations, etc..."></textarea>
+    <br>
+    <button onclick="sendPrompt()">Send</button>
+
+    <div id="output" class="output" style="display: none;"></div>
+  </div>
+
+  <script>
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    async function sendPrompt() {
+      const prompt = document.getElementById('prompt').value;
+      const outDiv = document.getElementById("output");
+
+      outDiv.style.display = 'block';
+      outDiv.innerHTML = `<p class="loading">🔍 Analyzing prompt...</p>`;
+
+      const res = await fetch("http://localhost:8000/process_prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await res.json();
+
+      let highlighted = escapeHtml(prompt);
+
+      data.entities.forEach(([text, label]) => {
+        const safeText = escapeHtml(text);
+        const regex = new RegExp(escapeRegExp(safeText), "g");
+        const span = `<span class="entity ${label}" title="${label}">${safeText}</span>`;
+        highlighted = highlighted.replace(regex, span);
+      });
+
+      outDiv.innerHTML = `
+        <h3>🔎 Detected Entities:</h3>
+        <div>${highlighted}</div>
+        <h3>💬 LLM Response:</h3>
+        <div>${escapeHtml(data.llm_response)}</div>
+        ${data.llm_fallback_ner ? `<h3>🛠️ Fallback NER (LLM):</h3><div>${escapeHtml(data.llm_fallback_ner)}</div>` : ""}
+      `;
+    }
+  </script>
+</body>
+</html>

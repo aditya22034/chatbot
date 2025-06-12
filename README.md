@@ -28,9 +28,9 @@ This application allows users to type natural language prompts in a web interfac
 
 Here’s how the UI looks:
 
-![App Screenshot](screenshot.png)
+![App Screenshot](Screenshot.png)
 
-> You can take a screenshot of your running app and save it as `screenshot.png` in the root of your project directory before pushing to GitHub.
+> You can take a screenshot of your running app and save it as `Screenshot.png` in the root of your project directory before pushing to GitHub.
 
 ---
 
